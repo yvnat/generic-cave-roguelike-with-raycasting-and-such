@@ -1,5 +1,4 @@
-/*
-The different color codes are
+/*The different color codes are
 
 0   BLACK
 1   BLUE
@@ -16,14 +15,14 @@ The different color codes are
 12  LIGHTRED
 13  LIGHTMAGENTA
 14  YELLOW
-15  WHITE
-*/
-#include "terminalapi/xplatapi.cpp"
+15  WHITE*/
+
+#include "terminalapi/xplatapi.hpp"
 
 #ifdef _WIN32
-	#include "terminalapi/winapi.cpp"
+	#include "terminalapi/winapi.hpp"
 #else
-	#include "terminalapi/unixapi.cpp"
+	#include "terminalapi/unixapi.hpp"
 #endif
 
 #include <iostream>
@@ -197,27 +196,27 @@ int main() {
 	bool quit = false;
 
 	while (not quit) {
-		if (getKey('W') & 0x8000) {
+		if (getKey('W')) {
 			if (m.map[y-1][x].walkable) {
 				y--;
 			}
 		}
-		if (getKey('S') & 0x8000) {
+		if (getKey('S')) {
 			if (m.map[y+1][x].walkable) {
 				y++;
 			}
 		}
-		if (getKey('A') & 0x8000) {
+		if (getKey('A')) {
 			if (m.map[y][x-1].walkable) {
 				x--;
 			}
 		}
-		if (getKey('D') & 0x8000) {
+		if (getKey('D')) {
 			if (m.map[y][x+1].walkable) {
 				x++;
 			}
 		}
-		if (getKey('Q') & 0x8000) {
+		if (getKey('Q')) {
 			quit = true;
 		}
 		
