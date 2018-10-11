@@ -22,3 +22,7 @@ class CRI {	//console renovation initiative (pronounced "cry")
 bool getKey(char n) {
     return GetKeyState(n) & 0x8000;
 }
+
+void sleep(int x) {
+	Sleep(x);
+}

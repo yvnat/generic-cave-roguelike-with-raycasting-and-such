@@ -19,3 +19,7 @@ class CRI {
 bool getKey(char n) {
     return false;
 }
+
+void sleep(int x) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(x));
+}
