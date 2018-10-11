@@ -18,8 +18,14 @@ The different color codes are
 14  YELLOW
 15  WHITE
 */
+#include "xplatapi.cpp"
 
-#include "windows.h"
+#ifdef _WIN32
+	#include "winapi.cpp"
+#else
+	#include "unixapi.cpp"
+#endif
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -29,34 +35,15 @@ The different color codes are
 
 using namespace std;
 
-class CRI {	//console renovation initiative (pronounced "cry")
-	public:
-	HANDLE STDHandle = GetStdHandle(STD_OUTPUT_HANDLE);
-	void setConsoleTitle(LPCSTR title) {
-		SetConsoleTitle(title);
-	}
-	void setCursorVisible(bool showFlag) {\
-		CONSOLE_CURSOR_INFO cursorInfo;
-		GetConsoleCursorInfo(STDHandle, &cursorInfo);
-		cursorInfo.bVisible = showFlag; // set the cursor visibility
-		SetConsoleCursorInfo(STDHandle, &cursorInfo);
-	}
-	void putChar(SHORT x, SHORT y, char c, WORD colour = 0x07) {
-		SetConsoleCursorPosition(STDHandle, {x, y});
-		SetConsoleTextAttribute(STDHandle, colour);
-		cout << c;
-	}
-};
-
 class Tile {
 	public:
 	char tile;
 	bool walkable;
 	bool transparent;
 	bool discovered;
-	WORD colour;
+	int colour;
 	CRI * console;
-	Tile(CRI * console, char tile, WORD colour = 0x07, bool walkable = false, bool transparent = false) {
+	Tile(CRI * console, char tile, int colour = 0x07, bool walkable = false, bool transparent = false) {
 		this->tile = tile;
 		this->walkable = walkable;
 		this->transparent = transparent;
@@ -64,10 +51,10 @@ class Tile {
 		this->console = console;
 		discovered = false;
 	}
-	drawTile(int atx, int aty) {
+	void drawTile(int atx, int aty) {
 		console->putChar(atx, aty, tile, colour);
 	}
-	drawHidden(int atx, int aty) {
+	void drawHidden(int atx, int aty) {
 		if (discovered) {
 			console->putChar(atx, aty, tile, 0x01);
 		} else {
@@ -85,7 +72,7 @@ class Map {
 	void init(int x, int y, CRI * console) {
 		this->console = console;
 		for (int i = 0; i < y; ++i) {
-			map.push_back({});
+			map.push_back(vector<Tile>());
 			for (int j = 0; j < x; ++j) {
 				if ((i != 0) and (i != y-1)) {	//if a middle row
 					if ((j != 0) and (j != x-1)) {	//if middle column
@@ -98,7 +85,7 @@ class Map {
 							} else {
 								toPushBack = '.';
 							}
-							WORD col;
+							int col;
 							if (rand() % 2 == 0) {
 								col = 0x0e;	//08 07
 							} else {
@@ -210,33 +197,33 @@ int main() {
 	bool quit = false;
 
 	while (not quit) {
-		if (GetKeyState('W') & 0x8000) {
+		if (getKey('W') & 0x8000) {
 			if (m.map[y-1][x].walkable) {
 				y--;
 			}
 		}
-		if (GetKeyState('S') & 0x8000) {
+		if (getKey('S') & 0x8000) {
 			if (m.map[y+1][x].walkable) {
 				y++;
 			}
 		}
-		if (GetKeyState('A') & 0x8000) {
+		if (getKey('A') & 0x8000) {
 			if (m.map[y][x-1].walkable) {
 				x--;
 			}
 		}
-		if (GetKeyState('D') & 0x8000) {
+		if (getKey('D') & 0x8000) {
 			if (m.map[y][x+1].walkable) {
 				x++;
 			}
 		}
-		if (GetKeyState('Q') & 0x8000) {
+		if (getKey('Q') & 0x8000) {
 			quit = true;
 		}
 		
 		m.renderRaycast(20, 10, x, y, 7, 80);
 		console.putChar(20, 10, '@', 0x07);
-		Sleep(50);
+		sleep(50);
 	}
 	return 0;
 }
