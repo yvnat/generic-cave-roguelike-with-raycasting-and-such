@@ -18,12 +18,12 @@ The different color codes are
 14  YELLOW
 15  WHITE
 */
-#include "xplatapi.cpp"
+#include "terminalapi/xplatapi.cpp"
 
 #ifdef _WIN32
 	#include "winapi.cpp"
 #else
-	#include "unixapi.cpp"
+	#include "terminalapi/unixapi.cpp"
 #endif
 
 #include <iostream>
