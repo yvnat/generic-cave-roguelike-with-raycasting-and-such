@@ -220,7 +220,7 @@ int main() {
 			quit = true;
 		}
 		
-		m.renderRaycast(20, 10, x, y, 7, 80);
+		m.renderRaycast(20, 10, x, y, 7, 40);
 		console.putChar(20, 10, '@', 0x07);
 		sleep(50);
 	}
