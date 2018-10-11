@@ -21,7 +21,7 @@ The different color codes are
 #include "terminalapi/xplatapi.cpp"
 
 #ifdef _WIN32
-	#include "winapi.cpp"
+	#include "terminalapi/winapi.cpp"
 #else
 	#include "terminalapi/unixapi.cpp"
 #endif
