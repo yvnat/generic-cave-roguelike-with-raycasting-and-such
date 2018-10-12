@@ -1,3 +1,5 @@
+#pragma once
+
 #include "windows.h"
 #include <string>	//this is good because it prevents the error
 #include <iostream>
@@ -23,10 +25,10 @@ class CRI {	//console renovation initiative (pronounced "cry")
 	}
 };
 
-bool getKey(char n) {
+inline bool getKey(char n) {
     return GetKeyState(n) & 0x8000;
 }
 
-void sleep(int x) {
+inline void sleep(int x) {
 	Sleep(x);
 }
