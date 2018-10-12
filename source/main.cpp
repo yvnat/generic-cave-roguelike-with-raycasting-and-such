@@ -30,11 +30,13 @@ int main() {
 	srand(time(0));
 
 	CRI console;
-	Map m; m.init(200,200, &console);
+	Map m; 
+	vector<int> startCoords = m.initAsBasicCave(200, 200, 10, &console);
 	console.setConsoleTitle("Roguedislike");
 	console.setCursorVisible(false);
 	
-	int x = 100; int y = 100;
+	int x = startCoords[0]; 
+	int y = startCoords[1];
 	bool quit = false;
 
 	while (not quit) {

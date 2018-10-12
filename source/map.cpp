@@ -9,7 +9,7 @@
 #include <set>
 #include <math.h>
 
-void Map::init(int x, int y, CRI * console) {
+void Map::initAsPrototype(int x, int y, CRI * console) {
 	this->console = console;
 	for (int i = 0; i < y; ++i) {
 		map.push_back(vector<Tile>());
@@ -41,6 +41,83 @@ void Map::init(int x, int y, CRI * console) {
 			}
 		}
 	}
+}
+
+vector<int> Map::initAsBasicCave(int x, int y, int rooms, CRI * console) {
+	this->console = console;	//this should be moved to a constructor
+
+	if (x <= 14 || y <= 14) {	//if map is too small, init as prototype instead
+		initAsPrototype(x, y, console);
+		return {100,100};
+	}
+
+	char acceptableGroundTiles[] = {'.','.','.',':'};
+	int acceptableGroundColours[] = {0x0e, 0x06};
+
+	//begin by creating a solid stone map
+	for (int i = 0; i < y; ++i) {
+		map.push_back(vector<Tile>());
+		for (int j = 0; j < x; ++j) {
+			map[i].push_back(Tile(console, 176, 0x67, false, false));
+		}
+	}
+
+	vector< vector<int> > roomCoords;	//vector of coordinates
+	//then, create several rooms of semirandom sizes in random locations.
+	for (int r = 0; r < rooms; ++r) {
+		int radius = (rand() % 4) + 2;
+		//set a random location and add it to the vector
+		int roomX = (rand() % (x - 14)) + 7;
+		int roomY = (rand() % (x - 14)) + 7;
+		roomCoords.push_back({roomX, roomY});
+
+		//loop through map within radius of room center and turn to ground
+		for (int i = roomY - radius; i < roomY + radius; ++i) {
+			for (int j = roomX - radius; j < roomX + radius; ++j) {
+				char ground = acceptableGroundTiles[rand() % 4];
+				int colour = acceptableGroundColours[rand() % 2];
+				map[i][j].convertTo(ground, colour, true, true);
+			}
+		}
+	}
+
+	//loop through all rooms and connect them to next room
+	for (int i = 0; i < roomCoords.size() - 1; ++i) {
+		//a digger is created that goes from the center of one room to the next and digs a path
+		int diggerX = roomCoords[i][0];
+		int diggerY = roomCoords[i][1];
+
+		int destX = roomCoords[i+1][0];
+		int destY = roomCoords[i+1][1];
+
+		while(diggerX != destX || diggerY != destY) {
+			//walk
+			if (diggerX > destX) {
+				diggerX--;
+			} else if (diggerX < destX) {
+				diggerX++;
+			}
+
+			if (diggerY > destY) {
+				diggerY--;
+			} else if (diggerY < destY) {
+				diggerY++;
+			}
+
+			//dig
+			for (int j = 0; j <= 1; ++j) {
+				for (int k = 0; k <= 1; ++k) {
+					char ground = acceptableGroundTiles[rand() % 4];
+					int colour = acceptableGroundColours[rand() % 2];
+					map[diggerY + j][diggerX + k].convertTo(ground, colour, true, true);
+				}
+			}
+
+		}
+	}
+
+	//return coordinates of first room
+	return roomCoords[0];
 }
 	
 float Map::castRay(int atx, int aty, int x, int y, float theta, float range) {
