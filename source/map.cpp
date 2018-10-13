@@ -1,5 +1,5 @@
 #include "map.hpp"
-
+#include "Utils.cpp"
 #include "includeCRI.hpp"
 #include "tile.hpp"
 
@@ -8,6 +8,8 @@
 #include <string>
 #include <set>
 #include <math.h>
+
+#define RAYSTEP 0.3
 
 void Map::initAsPrototype(int x, int y, CRI * console) {
 	this->console = console;
@@ -119,7 +121,16 @@ vector<int> Map::initAsBasicCave(int x, int y, int rooms, CRI * console) {
 	//return coordinates of first room
 	return roomCoords[0];
 }
-	
+
+float Map::castRay(V<int> start, V<float> dir, float distance) {
+	V<float> pos = V<float>(start.x,start.y);
+	for (float r = 0; r+=RAYSTEP; r<distance) {
+		pos = pos+(dir*RAYSTEP);
+		
+	}
+	return 0;
+}
+
 float Map::castRay(int atx, int aty, int x, int y, float theta, float range) {
 	float rayX, rayY;
 	bool isBlocked = false;
@@ -197,4 +208,8 @@ void Map::renderRaycast(int atx, int aty, int x, int y, float maxDistance, float
 	console->putChar((distances.size() * 3 / 4 )+ 1, 21, 'N', 0x0c);
 	console->putChar((distances.size() * 4 / 4 )+ 1, 21, 'E', 0x0c);
 	//first person view end
+}
+
+Tile Map::operator()(int x, int y) {
+	return map[y][x];
 }

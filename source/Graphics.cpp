@@ -1,3 +1,9 @@
+#pragma once
+#include <SDL2/SDL.h>
+#include <vector>
+
+using namespace std;
+
 class Display {
 public:
     int screen_w;
@@ -9,14 +15,15 @@ public:
 
     void video_init() {
         SDL_Init(SDL_INIT_VIDEO);
-        window = SDL_CreateWindow("Literally the Matrix", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_w, screen_h, SDL_WINDOW_SHOWN );
+        window = SDL_CreateWindow("the greatest roguelike ever", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_w, screen_h, SDL_WINDOW_SHOWN );
         renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED );
     }
-
+    Display();
     Display(int screen_w, int screen_h) {
         this->screen_w = screen_w;
         this->screen_h = screen_h;
     }
+    
     void refresh () {
         SDL_RenderPresent( renderer );
         SDL_UpdateWindowSurface( window );

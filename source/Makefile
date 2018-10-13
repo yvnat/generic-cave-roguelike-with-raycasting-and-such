@@ -3,5 +3,5 @@ build:
 	echo "Building executable..."
 	g++ -std=c++11 -c tile.cpp
 	#g++ -std=c++11 -c map.cpp
-	g++ -std=c++11 main.cpp map.cpp tile.cpp -lcurses -o main
+	g++ -std=c++11 main.cpp map.cpp tile.cpp -lSDL2 -o main
 
