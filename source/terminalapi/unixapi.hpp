@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <curses.h>
 
 using namespace std;
 
@@ -12,16 +13,17 @@ class CRI {
 
     }
     void setCursorVisible(bool visible) {
-
+        curs_set((int)visible);
     }
     void putChar(int x, int y, char c, int colour = 0x07) {
+
     }
 };
 
-bool getKey(char n) {
+inline bool getKey(char n) {
     return false;
 }
 
-void sleep(int x) {
+inline void sleep(int x) {
     std::this_thread::sleep_for(std::chrono::milliseconds(x));
 }

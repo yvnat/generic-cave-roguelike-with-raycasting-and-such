@@ -16,5 +16,5 @@ class Map {
 	vector<int> initAsBasicCave(int x, int y, int rooms, CRI * console);
 	float castRay(int atx, int aty, int x, int y, float theta, float range);
 	void renderRaycast(int atx, int aty, int x, int y, float maxDistance, float numOfRays);
-
+	
 };

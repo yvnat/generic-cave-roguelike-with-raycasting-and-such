@@ -34,6 +34,7 @@ int main() {
 	vector<int> startCoords = m.initAsBasicCave(200, 200, 10, &console);
 	console.setConsoleTitle("Roguedislike");
 	console.setCursorVisible(false);
+	std::cout << "oofer";
 	
 	int x = startCoords[0]; 
 	int y = startCoords[1];

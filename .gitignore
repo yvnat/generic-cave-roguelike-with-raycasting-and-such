@@ -3,3 +3,4 @@
 ./source/main
 *.gch
 *.gch
+**/.o
