@@ -131,7 +131,9 @@ float Map::castRay(int atx, int aty, int x, int y, float theta, float range) {
 		//if it's not the player's tile, draw it			
 		if (!((ceil(rayX) == x) && (ceil(rayY) == y))) {
 			if (isBlocked && !((ceil(rayY) == lastY) && (ceil(rayX) == lastX))) {	//if the ray has been stopped and this isn't the last known tile
-				map[ceil(rayY)][ceil(rayX)].drawHidden(atx+(ceil(rayX)-x), aty+(ceil(rayY)-y));
+				if (renderedThisRun.count(to_string(ceil(rayX)) + "," + to_string(ceil(rayY))) == 0) {
+					map[ceil(rayY)][ceil(rayX)].drawHidden(atx+(ceil(rayX)-x), aty+(ceil(rayY)-y));
+				}
 			} else {
 				if (renderedThisRun.count(to_string(ceil(rayX)) + "," + to_string(ceil(rayY))) == 0) {
 					renderedThisRun.insert(to_string(ceil(rayX)) + "," + to_string(ceil(rayY)));	//mark as rendered
