@@ -86,3 +86,10 @@ template <class T> class V{
     //     return V<T>(x * scale, y * scale);
     // }
 };
+
+class RaycastHit {
+	public:
+	float distance;
+	Tile collided;
+	RaycastHit();
+};

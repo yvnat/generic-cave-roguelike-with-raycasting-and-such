@@ -122,13 +122,24 @@ vector<int> Map::initAsBasicCave(int x, int y, int rooms, CRI * console) {
 	return roomCoords[0];
 }
 
-float Map::castRay(V<int> start, V<float> dir, float distance) {
+RaycastHit* Map::castRay(V<int> start, float theta, float distance) {
+	V<float> dir = V<float>((float)cos(theta), (float)sin(theta));
+	return castRay(start,dir,distance);
+}
+
+RaycastHit* Map::castRay(V<int> start, V<float> dir, float distance){
 	V<float> pos = V<float>(start.x,start.y);
 	for (float r = 0; r+=RAYSTEP; r<distance) {
 		pos = pos+(dir*RAYSTEP);
-		
+		Tile thisTile = map[ceil(pos.y)][ceil(pos.y)];
+		if (!thisTile.transparent) {
+			RaycastHit rch;
+			rch.collided = thisTile;
+			rch.distance = r;
+			return &rch;
+		}
 	}
-	return 0;
+	return nullptr;
 }
 
 float Map::castRay(int atx, int aty, int x, int y, float theta, float range) {
