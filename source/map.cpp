@@ -131,7 +131,12 @@ RaycastHit* Map::castRay(V<int> start, V<float> dir, float distance){
 	V<float> pos = V<float>(start.x,start.y);
 	for (float r = 0; r+=RAYSTEP; r<distance) {
 		pos = pos+(dir*RAYSTEP);
-		Tile thisTile = map[ceil(pos.y)][ceil(pos.y)];
+		int tx = ceil(pos.x);
+		int ty = ceil(pos.y);
+		if (tx == start.x && ty == start.y) {
+			continue;
+		}
+		Tile thisTile = map[ty][tx];
 		if (!thisTile.transparent) {
 			RaycastHit rch;
 			rch.collided = thisTile;
