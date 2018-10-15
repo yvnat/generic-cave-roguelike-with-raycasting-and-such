@@ -18,7 +18,7 @@ public:
         window = SDL_CreateWindow("the greatest roguelike ever", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_w, screen_h, SDL_WINDOW_SHOWN );
         renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED );
     }
-    Display();
+    Display() = default;
     Display(int screen_w, int screen_h) {
         this->screen_w = screen_w;
         this->screen_h = screen_h;

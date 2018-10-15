@@ -17,72 +17,77 @@
 14  YELLOW
 15  WHITE*/
 
+#include "Utils.cpp"
+#include "tile.hpp"
+#include "map.cpp"
 #include "Graphics.cpp"
 #include "Renderer.cpp"
 #include "time.h"
 
 using namespace std;
 
-#include "tile.hpp"
-#include "map.hpp"
 
 int main()
 {
 	srand(time(0));
-
-	CRI console;
 	Display display(640, 480);
 
 	display.video_init();
 
 	Map m;
-	vector<int> startCoords = m.initAsBasicCave(200, 200, 10, &console);
-	console.setConsoleTitle("Roguedislike");
-	console.setCursorVisible(false);
+	vector<int> startCoords = m.initAsBasicCave(200, 200, 10);
 	std::cout << "oofer";
 
 	int x = startCoords[0];
 	int y = startCoords[1];
-	bool quit = false;
+		// if (getKey('W'))
+		// {
+		// 	if (m.map[y - 1][x].walkable)
+		// 	{
+		// 		y--;
+		// 	}
+		// }
+		// if (getKey('S'))
+		// {
+		// 	if (m.map[y + 1][x].walkable)
+		// 	{
+		// 		y++;
+		// 	}
+		// }
+		// if (getKey('A'))
+		// {
+		// 	if (m.map[y][x - 1].walkable)
+		// 	{
+		// 		x--;
+		// 	}
+		// }
+		// if (getKey('D'))
+		// {
+		// 	if (m.map[y][x + 1].walkable)
+		// 	{
+		// 		x++;
+		// 	}
+		// }
+		// if (getKey('Q'))
+		// {
+		// 	quit = true;
+		// }
 
-	while (not quit)
-	{
-		if (getKey('W'))
-		{
-			if (m.map[y - 1][x].walkable)
-			{
-				y--;
-			}
-		}
-		if (getKey('S'))
-		{
-			if (m.map[y + 1][x].walkable)
-			{
-				y++;
-			}
-		}
-		if (getKey('A'))
-		{
-			if (m.map[y][x - 1].walkable)
-			{
-				x--;
-			}
-		}
-		if (getKey('D'))
-		{
-			if (m.map[y][x + 1].walkable)
-			{
-				x++;
-			}
-		}
-		if (getKey('Q'))
-		{
-			quit = true;
-		}
+		// m.renderRaycast(20, 10, x, y, 7, 40);
+		// console.putChar(20, 10, '@', 0x07);
+		// sleep(50);
+	bool run = true;
+	Renderer rdr(display);
 
-		m.renderRaycast(20, 10, x, y, 7, 40);
-		console.putChar(20, 10, '@', 0x07);
-		sleep(50);
+	while (run) {
+		for (SDL_Event event : display.get_events()) {
+			if (event.type==SDL_QUIT ) {
+				run = false;
+			}
+		}
+		rdr.renderMap(m, V<int>(x,y), 20);
+		display.refresh();
 	}
+
 	return 0;
 }
