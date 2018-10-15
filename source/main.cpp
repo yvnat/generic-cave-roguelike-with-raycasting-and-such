@@ -19,8 +19,8 @@
 
 #include "Utils.cpp"
 #include "tile.hpp"
-#include "map.cpp"
 #include "Graphics.cpp"
+#include "map.cpp"
 #include "Renderer.cpp"
 #include "time.h"
 
@@ -29,7 +29,7 @@ using namespace std;
 
 int main()
 {
-	srand(time(0));
+	srand(5);//time(0));
 	Display display(640, 480);
 
 	display.video_init();

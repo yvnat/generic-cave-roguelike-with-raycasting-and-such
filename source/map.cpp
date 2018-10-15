@@ -130,24 +130,26 @@ class Map {
 		return roomCoords[0];
 	}
 
-	RaycastHit* castRay(V<int> start, float theta, float distance) {
-		V<float> dir = V<float>((float)cos(theta), (float)sin(theta));
-		return castRay(start,dir,distance);
-	}
+	// RaycastHit* castRay(V<int> start, float theta, float distance) {
+	// 	V<float> dir = V<float>((float)cos(theta), (float)sin(theta));
+	// 	return castRay(start,dir,distance);
+	// }
 
-	RaycastHit* castRay(V<int> start, V<float> dir, float distance){
+	RaycastHit* castRay(Display d, V<int> start, V<float> dir, float distance){
+		std::cout<<"start:"<<dir.x<<", "<<dir.y<<"\n";
+		std::cout<<"start:"<<start.x<<", "<<start.y<<"\n";
 		V<float> pos = V<float>(start.x,start.y);
 		for (float r = 0; r<distance; r+=RAYSTEP) {
 			pos.x += dir.x*RAYSTEP;
 			pos.y += dir.y*RAYSTEP;
-			int tx = ceil(pos.x);
-			int ty = ceil(pos.y);
-			//std::cout<<r<<":"<<dir.x<<", "<<dir.y<<"\n";
-			if (tx == start.x && ty == start.y) {
-				continue;
-			}
+			int tx = floor(pos.x);
+			int ty = floor(pos.y);
+			//std::cout<<r<<":"<<tx<<", "<<ty<<"\n";
+			d.draw_rect({tx,ty,1,1},Color(0,1,0).to_sdl());
+			//d.refresh();
 			Tile thisTile = map[ty][tx];
 			if (!thisTile.transparent) {
+				d.draw_rect({tx,ty,1,1},Color(0,0,1).to_sdl());
 				RaycastHit rch;
 				rch.collided = thisTile;
 				rch.distance = r;
