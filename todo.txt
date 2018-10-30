@@ -1,5 +1,0 @@
--add entities and an actual implementation of a player character
-
--implement dijkstra map centered around player for entity pathfinding
-
--fix raycasting algorithm to remove artifacts and clarify code
