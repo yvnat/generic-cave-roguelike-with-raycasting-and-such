@@ -5,34 +5,61 @@
 //but ere you split this file apart, I beg you, please consider:
 //better giant blob of pasta dough than header hell spaghetti.
 
-//these are for CRI
 #include <iostream>
 #include "Windows.h"
 #include <string>
 #include <array>
-
-//these are for map
 #include <vector>
-//#include <set>
 #include "math.h"
 #include <unordered_set>
-//#include <array> already included in CRI
-//#include <string> already included in CRI
 #include <queue>
-
-//these are for entity
-//#include <array> already included in CRI
-//#include <string> already included in CRI
 #include <stack>
-
-//this is only for rand()
 #include "time.h"
-
-//for debugging purposes
 #include <chrono>
 #include <map>
+#include <deque>
 
 using namespace std;
+
+class Timer { //debugging use
+	public:
+	map<string, vector<float> > dataSets;
+	std::chrono::_V2::system_clock::time_point start = chrono::high_resolution_clock::now();    
+
+	Timer() {
+		cout << "yay";
+	}
+
+	void createNewSet(string name) {
+		dataSets[name] = {};
+	}
+	void startTimer() {
+		start = chrono::high_resolution_clock::now();
+	}
+	void endTimer(string set) {
+		std::chrono::_V2::system_clock::time_point end = chrono::high_resolution_clock::now();
+		dataSets[set].push_back(std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
+	}
+
+	float getAverage(vector<float> data) {
+		float total = 0;
+		for (int i = 0; i < data.size(); ++i) {
+			total += data[i];
+		}
+		return total / data.size();
+	}
+	string returnData() {
+		string toReturn = "";
+		for (auto i: dataSets) {
+			toReturn += i.first + ":" + to_string(getAverage(i.second));
+		}
+		return toReturn;
+	}
+};
+Timer timer;
+void setupTimer() {
+	timer.createNewSet("fps");
+}
 
 class CRI {	//rendering class
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -43,7 +70,6 @@ class CRI {	//rendering class
 
 	public:
 	void init(int x, int y, bool unicode) {
-		/*stuff that makes sense*/
 		for (int i = 0; i < y; ++i) {
 			screen.push_back({});
 			for (int j = 0; j < x; ++j) {
@@ -78,6 +104,9 @@ class CRI {	//rendering class
 		if (!SetConsoleMode(hOut, dwMode)){
 			cout << GetLastError();
 		}
+
+		/*-----------------Set window to maximized-----------------*/
+		ShowWindow(GetConsoleWindow(), SW_MAXIMIZE);
 
 		/*---------------Hide Cursor--------------*/
 		CONSOLE_CURSOR_INFO cursorInfo;
@@ -122,7 +151,6 @@ class CRI {	//rendering class
 	string setColour(array<int, 3> fore, array<int, 3> back) {
 		return "\033[38;2;" + to_string(fore[0]) + ";" + to_string(fore[1]) + ";" + to_string(fore[2]) + "m"	//foreground
 			 + "\033[48;2;" + to_string(back[0]) + ";" + to_string(back[1]) + ";" + to_string(back[2]) + "m";	//background
-
 	}
 
 	//put an input string (recommended ANSI colour + single char) to a SINGLE TILE
@@ -145,55 +173,65 @@ class CRI {	//rendering class
 
 	//this assembles screen into a string, then outputs it to the console
 	void render() {	
-		moveConsoleDrawingPoint(0,0);	//reset the console cursor
 		string toDisplay = "";
+		moveConsoleDrawingPoint(0,0);	//reset the console cursor
 		for (int i = 0; i < screen.size(); ++i) {
-			for (int j = 0; j < screen.size(); ++j) {
+			for (int j = 0; j < screen[0].size(); ++j) {
 				toDisplay += screen[i][j];
 			}
 			toDisplay += setColour({0,0,0}, {0,0,0}) + "\n";
 		}
 		DWORD slen=lstrlen(toDisplay.c_str());
-		//probably faster than cout
 		WriteConsoleA(GetStdHandle(STD_OUTPUT_HANDLE),toDisplay.c_str(),slen,&slen,NULL);
+	}
+
+	//this cleans the virtal screen
+	void clear() {
+		screen = vector<vector<string>>(screen.size(),vector<string>(screen[0].size(), setColour({0,0,0},{0,0,0}) + " "));
 	}
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
 };
 
-class Timer { //debugging use
+class Log {
 	public:
-	map<string, vector<float> > dataSets;
-	std::chrono::_V2::system_clock::time_point start = chrono::high_resolution_clock::now();    
-
-	Timer() {
-		cout << "yay";
-	}
-
-	void createNewSet(string name) {
-		dataSets[name] = {};
-	}
-	void startTimer() {
-		start = chrono::high_resolution_clock::now();
-	}
-	void endTimer(string set) {
-		std::chrono::_V2::system_clock::time_point end = chrono::high_resolution_clock::now();
-		dataSets[set].push_back(std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
-	}
-
-	float getAverage(vector<float> data) {
-		float total = 0;
-		for (int i = 0; i < data.size(); ++i) {
-			total += data[i];
+	CRI * console;
+	vector<string> messages;
+	vector<array<int, 3>> colours;
+	array<int, 3> back;
+	int x1, y1, x2, y2;	//these are the corners
+	void init(CRI * console, int x1, int y1, int x2, int y2, array<int, 3> back = {0, 0, 0}) {
+		this->console = console;
+		this->back = back;
+		if (x1 > x2) {
+			this->x1 = x2;
+			this->x2 = x1;
+		} else {
+			this->x1 = x1;
+			this->x2 = x2;
 		}
-		return total / data.size();
-	}
-	string returnData() {
-		string toReturn = "";
-		for (auto i: dataSets) {
-			toReturn += i.first + ":" + to_string(getAverage(i.second)) + "\n";
+		if (y1 > y2) {
+			this->y1 = y2;
+			this->y2 = y1;
+		} else {
+			this->y1 = y1;
+			this->y2 = y2;
 		}
-		return toReturn;
+	}
+	//this adds a message to the log
+	void log(string message, array<int, 3> colour = {255, 255, 255}) {
+		messages.push_back(message);
+		colours.push_back(colour);
+	}
+	//this write all messages to screen
+	void render() {
+		int j = 0;
+		//add the messages
+		for (int i = messages.size() - 1; i >= 0; --i, ++j) {
+			if (y1 + j <= y2) {
+				console->putString(x1, y1 + j, messages[i], colours[i], back);
+			}
+		}
 	}
 };
 
@@ -223,35 +261,18 @@ namespace std {	//this implements hashing of Coord, somehow.
 	};
 }
 
-//////////////////////////////////////////////////////////////HERE BE EVENTS
- //events are stored in the Timeline stack in World
- //they represent events
- enum EventType {
-	 ENTITY_MOVE,
-	 ENTITY_ROTATE,
- };
- class Event {
-	 public:
-	 int timestamp;
-	 EventType id;
-	 Event(int timestamp, EventType id) {
-		 this->timestamp = timestamp;
-		 this->id = id;
-	 }
- };
- class Event_EntityMove : public Event {
-	 public:
-	 int tox, toy;
-	 int fromx, fromy;
-	 Event_EntityMove(int timestamp, int tox, int toy, int fromx, int fromy) : Event(timestamp, EventType::ENTITY_MOVE) {
-		 this->tox = tox;
-		 this->toy = toy;
-		 this->fromx = fromx;
-		 this->fromy = fromy;
-	 }
- };
-//////////////////////////////////////////////////////////////
-
+class BodyPart {
+	public:
+	bool disabled, critical, walk, grab;
+	string name;
+	BodyPart(string name, bool critical, bool walk, bool grab) {
+		disabled = false;
+		this->name = name;
+		this->critical = critical;
+		this->walk = walk;
+		this->grab = grab;
+	}
+};
 class Entity {
 	public:
 /*-------------------general members and constructor----------------------*/
@@ -269,8 +290,18 @@ class Entity {
 
 	char glyph;
 	string name;
+
 	Coord pos = Coord(-1,-1);
+	int depth;
+
+	bool acting;
+	bool alive;
+
 	Facing dir;
+	vector<BodyPart> body;
+	bool humanoid;
+	int height;	//in cm
+	int baseSpeed;
 
 	array<int, 3> fore;
 	array<int, 3> bloodColour;
@@ -281,24 +312,82 @@ class Entity {
 		this->fore = fore;
 		this->bloodColour = bloodColour;
 		dir = N;
+		acting = false;
+		alive = true;
 	}
-
+	void initAsHumanoid() {
+		humanoid = true;
+		height = 165;
+		baseSpeed = 3;
+		body.push_back(BodyPart("torso", true, false, false));
+		body.push_back(BodyPart("head", true, false, false));
+		body.push_back(BodyPart("left arm", false, false, true));
+		body.push_back(BodyPart("right arm", false, false, true));
+		body.push_back(BodyPart("left leg", false, true, false));
+		body.push_back(BodyPart("right leg", false, true, false));
+	}
+	int getSpeed() {
+		int speed = baseSpeed;
+		if (humanoid) {
+			if (!body[4].disabled && !body[5].disabled) {
+				return speed;
+			}
+			if (!body[4].disabled || !body[5].disabled) {
+				return speed * 2;
+			}
+			return speed * 5;
+		} else {
+			//when I add non-humanoids this will cause easily identified bugs, as opposed to subtle ones
+			return 99999999;
+		}
+	}
 };
 
-class Player: public Entity {
-	public:
-	Player() : Entity('@', "you", {192,192,192}) {}
+///////////////////////////////////////////////   EVENTS   /////////////////////////////////////////////////
+ class Event {
+	 public:
+	 enum EventType {
+		 DEFAULT,
+		 ENTITYMOVE,
+		 size
+ 	 };
+	 int timestamp;
+	 EventType type = DEFAULT;
+	 Event(int timestamp) {
+		 this->timestamp = timestamp;
+	 }
+ };
+ class Event_EntityMove : public Event {
+	 public:
+	 Entity * subject;
+	 int fromx, fromy;
+	 int tox, toy;
+	 Event_EntityMove(int timestamp, Entity * subject, int fromx, int fromy, int tox, int toy) : Event(timestamp) {
+		 type = ENTITYMOVE;
+		 this->subject = subject;
+		 this->fromx = fromx;
+		 this->fromy = fromy;
+		 this->tox = tox;
+		 this->toy = toy;
+	 }
+ };
 
-};
+ //ew globals
+ vector<Event *> global__eventQ;
+ int global__currentTime;
+////////////////////////////////////////////////////////////////////////////////////////////////
 
 class Map {
 	public:
-/*-------------------Useful Subclasses----------------------*/
+/*-----------------------Useful Subclasses----------------------*/
 	class Tile {
 		public:
 		char tile;
 		array<int, 3> fore, back;
+		array<float, 3> staticLight, dynamicLight;
 		bool walkable, transparent, discovered;
+		bool lightSource;
+		array<float, 3> lightEmission;
 		string description;
 		Tile(char tile, string description = "UNKNOWN TILE", array<int, 3> fore = {192, 192, 192}, array<int, 3> back = {0, 0, 0}, bool walkable = false, bool transparent = false) {
 			this->tile = tile;
@@ -306,19 +395,187 @@ class Map {
 			this->back = back;
 			this->walkable = walkable;
 			this->transparent = transparent;
+			staticLight = {.1, .1, .4}; dynamicLight = {0, 0, 0};
 			discovered = false;
+			lightSource = false;
+			lightEmission = {0, 0, 0};
+		}
+		void initAsLightSource(array<float, 3> light) {
+			lightSource = true;
+			lightEmission = light;
+		}
+		array< array<int, 3> , 2> getDisplayColour() {
+			array<int, 3> dispf = {static_cast<int>(fore[0] * (staticLight[0] + dynamicLight[0])), static_cast<int>(fore[1] * (staticLight[1] + dynamicLight[1])), static_cast<int>(fore[2] * (staticLight[2] + dynamicLight[2]))};
+			array<int, 3> dispb = {static_cast<int>(back[0] * (staticLight[0] + dynamicLight[0])), static_cast<int>(back[1] * (staticLight[1] + dynamicLight[1])), static_cast<int>(back[2] * (staticLight[2] + dynamicLight[2]))};
+			array<array<int, 3>, 2> colour = {dispf, dispb};
+			return colour;
+		}
+		array< array<int, 3> , 2> getEntityColour(array<int, 3> ec) {
+			array<int, 3> dispf = {static_cast<int>(ec[0] * (staticLight[0] + dynamicLight[0])), static_cast<int>(ec[1] * (staticLight[1] + dynamicLight[1])), static_cast<int>(ec[2] * (staticLight[2] + dynamicLight[2]))};
+			array<int, 3> dispb = {static_cast<int>(back[0] * (staticLight[0] + dynamicLight[0])), static_cast<int>(back[1] * (staticLight[1] + dynamicLight[1])), static_cast<int>(back[2] * (staticLight[2] + dynamicLight[2]))};
+			array<array<int, 3>, 2> colour = {dispf, dispb};
+			return colour;
 		}
 	};
-/*-------------------general members and constructor----------------------*/
+/*-----------------------general members and constructor----------------------*/
 	vector< vector<Tile> > map;
 	vector< vector<int> > dijkstraMap;
 	vector<Entity> entities;
-	Entity player = Player();
 	CRI * console;
 
 	Map(CRI * console) {
 		map = {};
 		this->console = console;
+	}
+
+/*-----------------------rendering/raycasting--------------------------*/
+	//these three sets of coordinates are used in the rendering
+	unordered_set<Coord> tilesRevealed;
+		//this stores all the tiles revealed by the raycaster
+		//they are later rendered.
+	unordered_set<Coord> entitiesRendered;
+		//this stores the coords of all the entities currently on the screen. 
+		//It allows them to be easily accessed for animations and such
+	unordered_set<Coord> tilesStaticallyLit;
+		//this ensures that tiles will not be lit multiple times by multiple rays from one source
+		//it is reset by every light source
+	float getLightValue(float light, float distance) {
+		return min(light / pow(distance * .5, .6), 1.0);
+	}
+	void castRay(float fromx, float fromy, float theta, float viewRange, float step, array<float, 3> light, bool lightOnly, bool debug = false) {	//note: upgrade to DDA
+		//for debugging
+		array<int, 3> rayColour = {rand() % 255, rand() % 255, rand() % 255};	
+
+		float rayX = fromx, rayY = fromy;
+		float rayDistance = 0;
+	
+		//precomputed sin and cos
+		float vectorX = cos(theta);
+		float vectorY = sin(theta);
+	
+		while (true) {
+			rayDistance += step;
+			rayX += vectorX * step;	//advance by magic of trig
+			rayY += vectorY * step;
+
+			//prevents out of bound rays, except not really
+			if (ceil(rayY) < 0 || ceil(rayX) < 0 || ceil(rayY) >= map.size() || ceil(rayX) >= map[0].size()) {	
+				break;
+			}
+			if (map[ceil(rayY)][ceil(rayX)].transparent && rayDistance < viewRange - 1.5) {	//if this is a valid tile and not blocked before
+				if (!lightOnly) {	//'light only' does no rendering, only light
+					if (debug) {
+						map[ceil(rayY)][ceil(rayX)].back = rayColour;
+					}
+					map[ceil(rayY)][ceil(rayX)].discovered = true;
+					tilesRevealed.insert(Coord(ceil(rayX), ceil(rayY)));
+					map[ceil(rayY)][ceil(rayX)].dynamicLight = {getLightValue(light[0], rayDistance), getLightValue(light[1], rayDistance), getLightValue(light[2], rayDistance)};
+				} else if (tilesStaticallyLit.count(Coord(ceil(rayX), ceil(rayY))) == 0) {
+					//if not already lit by the current light source, light it up
+					array<float, 3> tileLight = map[ceil(rayY)][ceil(rayX)].staticLight;
+					map[ceil(rayY)][ceil(rayX)].staticLight = {tileLight[0] + getLightValue(light[0], rayDistance), tileLight[1] + getLightValue(light[1], rayDistance), tileLight[2] + getLightValue(light[2], rayDistance)};
+					//mark as lit
+					tilesStaticallyLit.insert(Coord(ceil(rayX), ceil(rayY)));
+				}
+
+			} else {	//if it's not a valid tile (note that this check extends 1 tile out)
+				break;
+			}
+		}
+	}
+
+	//this renders stuff and such
+	int renderRaycast(int atx, int aty, float fromx, float fromy, float viewRange, float step, bool debug = false, bool coverHidden = true) {
+		//clear the rendering sets
+		tilesRevealed.clear();
+		entitiesRendered.clear();
+		//cast the rays
+		int numOfRays = 2 * M_PI * viewRange;
+		for (int r = 0; r < numOfRays; ++r) {
+			float theta = (2 * M_PI) * (static_cast<float>(r) / numOfRays);
+			castRay(fromx - .5, fromy - .5, theta, viewRange, step, {1, .8, 0}, false, debug);
+		}
+
+		//post processing to show walls that are adjacent to revealed floors
+		unordered_set<Coord> newWalls;
+		//goes through every revealed tile and adds all adjacent walls to new set
+		for (auto i: tilesRevealed) {
+			for (int iy = -1; iy <= 1; ++iy) {
+				for (int ix = -1; ix <= 1; ++ix) {
+					if (map[i.y + iy][i.x + ix].transparent == false) {
+						newWalls.insert(Coord(i.x + ix, i.y + iy));
+						map[i.y + iy][i.x + ix].discovered = true;
+						map[i.y + iy][i.x + ix].staticLight = map[i.y][i.x].staticLight;
+						map[i.y + iy][i.x + ix].dynamicLight = map[i.y][i.x].dynamicLight;
+					}
+				}
+			}
+		}
+
+		//adds the new set to the old set
+		for (auto i: newWalls) {
+			tilesRevealed.insert(i);
+		}
+
+		//render the revealed tiles
+		for (auto i: tilesRevealed) {
+			array<array<int, 3>, 2> tilecolour = map[i.y][i.x].getDisplayColour();
+			console->putC(atx + (i.x - fromx), aty + (i.y - fromy), string(1,map[i.y][i.x].tile), tilecolour[0], tilecolour[1]);
+		}
+
+		//render entities
+		for (int i = 0; i < entities.size(); ++i) {
+			if (tilesRevealed.count(entities[i].pos) == 1) {	//if within FOV
+				Coord rpos = Coord(atx + (entities[i].pos.x - fromx), aty + (entities[i].pos.y - fromy));
+				array<array<int, 3>, 2> rendercolour = map[entities[i].pos.y][entities[i].pos.x].getEntityColour(entities[i].fore);
+				console->putC(rpos.x, rpos.y, string(1, entities[i].glyph), rendercolour[0], rendercolour[1]);	//render it
+				entitiesRendered.insert(entities[i].pos);
+			}
+		}
+
+		//return the number of rays used
+		return numOfRays;
+	}
+
+	void drawMoves(int atx, int aty, int fromx, int fromy, int frame) {
+		for(int i = 0; i < global__eventQ.size(); ++i) {	//looping through every event
+			//movement events
+			if (global__eventQ[i]->type == Event::EventType::ENTITYMOVE) {
+				Event_EntityMove * moveEvent = static_cast<Event_EntityMove *>(global__eventQ[i]);
+				//don't draw events that ORIGINATE outside FOV
+				if (tilesRevealed.count(Coord(moveEvent->fromx, moveEvent->fromy)) != 1) {
+					continue;
+				}
+				string symbol = "E";
+				switch (frame) {
+					case 0: symbol = string(1, static_cast<char>(250)); break;
+					case 1: symbol = string(1, static_cast<char>(249)); break;
+					case 2: symbol = string(1, static_cast<char>(254)); break;
+					case 3: symbol = string(1, static_cast<char>(219)); break;
+					case 4: symbol = string(1, static_cast<char>(219)); break;
+					case 5: symbol = string(1, static_cast<char>(219)); break;
+				}
+				//frame < 6 draw the symbol, frames >= 6 show the ground below
+				if (frame < 6) {
+					console->putC(atx + (moveEvent->tox - fromx), aty + (moveEvent->toy - fromy), symbol, {0, 255, 0}, {0,0,0});
+				} else if (frame == 6) {
+					array<array<int, 3>, 2> colour = map[moveEvent->toy][moveEvent->tox].getDisplayColour();
+					console->putC(atx + (moveEvent->tox - fromx), aty + (moveEvent->toy - fromy), string(1, map[moveEvent->toy][moveEvent->tox].tile), colour[0], colour[1]);
+				}
+			}
+			//other events, when those will exist
+		}
+		//this redraws all the entities if the animation is in the first transparent frame
+		//note that this is extremely wasteful, but I can't think of a better solution
+		if (frame == 6) {
+			for (int i = 0; i < entities.size(); ++i) {
+				if (entitiesRendered.count(entities[i].pos) == 1) {
+					Coord rpos = Coord(atx + (entities[i].pos.x - fromx), aty + (entities[i].pos.y - fromy));
+					array<array<int, 3>, 2> rendercolour = map[entities[i].pos.y][entities[i].pos.x].getEntityColour(entities[i].fore);
+					console->putC(rpos.x, rpos.y, string(1, entities[i].glyph), rendercolour[0], rendercolour[1]);	//render it
+				}
+			}
+		}
 	}
 
 /*-----------------------map generation--------------------------*/
@@ -332,7 +589,75 @@ class Map {
 		}
 	}
 
+	//adds random light sources, for testing purposes
+	void addRandomLamps() {
+		for (int i = 0; i < 160; ++i) {
+			Coord pos = Coord(rand() % map[0].size(), rand() % map.size());
+			map[pos.y][pos.x] = Tile('#', "lamp", {255, 255, 255}, {163, 74, 58}, true, true);
+			// array<float, 3> colour = {1, .8, 0};
+			array<float, 3> colour = {(float)(rand() % 10) / 7, (float)(rand() % 10) / 7, (float)(rand() % 10) / 7};
+			map[pos.y][pos.x].initAsLightSource(colour);
+		}
+	}
+
+	void calculateStaticLight() {
+		for (int i = 0; i < map.size(); ++i) {
+			for (int j = 0; j < map[0].size(); ++j) {
+				if (map[i][j].lightSource) {
+					tilesStaticallyLit.clear();
+					int viewRange = 30;
+					int numOfRays = 2 * M_PI * viewRange;
+					for (int r = 0; r < numOfRays; ++r) {
+						float theta = (2 * M_PI) * (static_cast<float>(r) / numOfRays);
+						castRay(j - .5, i - .5, theta, viewRange, .3, map[i][j].lightEmission, true, false);
+					}
+				}
+			}
+		}
+	}
+
 	bool CA_wallOrFloor(int x, int y, int sizex, int sizey, int ifWall, int ifEmpty) {	//true = wall, false = floor
+		int countW = 0;
+		//this counts how many walls are surrounding it
+		for (int i = -1; i <= 1; ++i) {
+			for (int j = -1; j <= 1; ++j) {
+				bool outOfBound = false;
+				//these watch for out of bounds tiles
+				//
+				//note: out of bounds tiles are treated as walls for counting purposes
+				//
+				if ((y+i < 0) || (y+i >= sizey)) {	//if y out of range
+					outOfBound = true;
+					countW++;
+				}
+				if ((x+j < 0) || (x+j >= sizex)) {  //if x out of range
+					outOfBound = true;
+					countW++;
+				}
+				if (i == 0 && j == 0) {	//not strictly necessary, but ignores the actual tile itself
+					outOfBound = true;
+				}
+				//if hasn't failed yet, counts the tile
+				if (not outOfBound) {
+					if (map[y+i][x+j].tile == '#') {
+						countW++;
+					}
+				}
+			}
+		}
+		//if more than ifEmpty of its surroundings are walls, 
+		//or it is already a wall and ifWall of its surroundings are walls, it will be a wall
+		//else, it will be a floor
+		if ((map[y][x].tile == '.') && (countW >= ifEmpty)) {
+			return true;
+		} else if ((map[y][x].tile == '#') && (countW >= ifWall)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	bool CA_wallOrFloor_GivenMap(vector< vector<Tile> > map, int x, int y, int sizex, int sizey, int ifWall, int ifEmpty) {	//true = wall, false = floor
 		int countW = 0;
 		//this counts how many walls are surrounding it
 		for (int i = -1; i <= 1; ++i) {
@@ -425,8 +750,74 @@ class Map {
 		//post processing to make it a valid and pretty map
 		getCaveAesthetic(aesthetic);
 
-		//put the player somewhere
-		player.pos = getValidPos();
+		// //put the player somewhere
+		// player.pos = getValidPos();
+	}
+
+	void initAsDungeon_CA(int sizex, int sizey, int numRooms, int roomSizeX, int roomSizeY, int iterations, int initCoverage, int ifWall, int ifEmpty, int aesthetic) {
+		//generate the initial map as pure stone
+		for (int i = 0; i < sizey; ++i) {
+			map.push_back({});
+			for (int j = 0; j < sizex; ++j) {
+				map[i].push_back(Tile('#'));
+			}
+		}
+		//create an "empty" dijkstra map
+		createDijkstraMap();
+
+		//repeat for numRooms times
+		for (int r = 0; r < numRooms; ++r) {
+			int roomX = rand() % (sizex - roomSizeX - 4) + 2;
+			int roomY = rand() % (sizey - roomSizeY - 4) + 2;
+			//make a room submap
+			vector< vector<Tile> > roomMap;
+			
+			//initialize it as would to CA cave
+			for (int i = 0; i < roomSizeY; ++i) {
+				roomMap.push_back({});
+				for (int j = 0; j < roomSizeX; ++j) {
+					roomMap[i].push_back(Tile('.'));
+					if (rand() % 100 <= initCoverage) {
+						roomMap[i][j] = (Tile('#'));
+					}
+				}
+			}
+			//run CA on THE ONE ROOM
+			for (int t = 0; t < iterations; ++t) {
+				//this creates a new map and bases it off the old
+				//then, it sets that to be the old map
+				vector<vector<Tile>> newMap;
+				for (int i = 0; i < roomSizeY; ++i) {
+					newMap.push_back({});
+					for (int j = 0; j < roomSizeX; ++j) {
+						//add a floor
+						newMap[i].push_back(Tile('.'));
+						//if it's a wall
+						if (CA_wallOrFloor_GivenMap(roomMap, j, i, roomSizeX, roomSizeY, ifWall, ifEmpty)) {
+							newMap[i][j] = (Tile('#'));
+						}
+					}
+				}
+				//set the old map to the new map in preparation for next iteration
+				roomMap = newMap;
+			}
+
+			//combine room with actual map
+			for (int i = roomY; i < roomY + roomSizeY; ++i) {
+				cout << "\n";
+				for (int j = roomX; j < roomX + roomSizeX; ++j) {
+					//in case the room ends up being outside map (it shouldn't be)
+					if (i >= map.size() || j >= map[0].size()) {
+						break;
+						cout << "ERROR";
+					}
+					map[i][j] = roomMap[i - roomY][j - roomX];
+					cout << roomMap[i - roomY][j - roomX].tile;
+				}
+			}
+		}
+
+		getCaveAesthetic(aesthetic);
 	}
 
 	void getCaveAesthetic(int floorType) {
@@ -435,8 +826,9 @@ class Map {
 		 1 rock
 		 2 shrubland
 		*/
-		array<int, 3> fcolour = {128, 128, 96};
-		array<int, 3> wcolour = {50, 40, 50};
+		// array<int, 3> wcolour = {110 + rand() % 20, 100 + rand() % 20, 93 + rand() % 20};
+		array<int, 3> wcolour = {120, 110, 103};
+		array<int, 3> fcolour = {static_cast<int>(wcolour[0] / 1.5), static_cast<int>(wcolour[1] / 1.5), static_cast<int>(wcolour[2] / 1.5)};//{75, 70, 80};
 		vector<char> floorTypes;
 		string floorDesc;
 		switch (floorType) {
@@ -451,18 +843,19 @@ class Map {
 		for (int i = 0; i < map.size(); ++i) {
 			for (int j = 0; j < map[0].size(); ++j) {
 				if (map[i][j].tile == '.') {
+					const int fv = 8;
 					array<int, 3> colour = fcolour;
-					colour[0] += (rand() % 32) - 16;
-					colour[1] += (rand() % 32) - 16;
-					colour[2] += (rand() % 32) - 16;
+					colour[0] += (rand() % (fv * 2)) - fv;
+					colour[1] += (rand() % (fv * 2)) - fv;
+					colour[2] += (rand() % (fv * 2)) - fv;
 					map[i][j] = Tile(floorTypes[rand() % floorTypes.size()], floorDesc, colour, {0,0,0}, true, true);
 				} else {
 					const int cv = 5, dv = 16;
 					array<int, 3> colour = wcolour;
+					array<int, 3> detailcolour = {60, 66, 66};
 					colour[0] += (rand() % (cv * 2)) - cv;
 					colour[1] += (rand() % (cv * 2)) - cv;
 					colour[2] += (rand() % (cv * 2)) - cv;
-					array<int, 3> detailcolour = {90, 100, 100};
 					detailcolour[0] += (rand() % (dv * 2)) - dv;
 					detailcolour[1] += (rand() % (dv * 2)) - dv;
 					detailcolour[2] += (rand() % (dv * 2)) - dv;
@@ -484,157 +877,6 @@ class Map {
 		return pos;
 	}
 
-
-/*-----------------------raycasting--------------------------*/
-	//these three sets of coordinates are used in the rendering
-	unordered_set<Coord> tilesRevealed;
-		//this stores all the tiles revealed by the raycaster
-		//they are later rendered.
-	unordered_set<Coord> tilesToHide;
-		//this stores all the tiles within range but NOT revealed.
-		//they are used to cover up the previously rendered tiles instead of clearing the screen
-	unordered_set<Coord> entitiesRendered;
-		//this stores all the entities currently on the screen. 
-		//It prevents them from flashing due to being overwritten by a floor when moving
-	void castRay(float fromx, float fromy, float theta, float viewRange, float step, bool renderHidden = true, bool debug = false) {	//note: upgrade to DDA
-		//for debugging
-		array<int, 3> rayColour = {rand() % 255, rand() % 255, rand() % 255};	
-
-		float rayX = fromx, rayY = fromy;
-		float rayDistance = 0;
-	
-		//precomputed sin and cos
-		float vectorX = cos(theta);
-		float vectorY = sin(theta);
-	
-		bool blocked = false;
-		while (true) {
-			rayDistance += step;
-			if (blocked) {	//goes 3 times as fast if blocked already
-				rayDistance += 2 * step;
-				rayX += 2 * vectorX * step;
-				rayY += 2 * vectorY * step;
-			}
-			rayX += vectorX * step;	//advance by magic of trig
-			rayY += vectorY * step;
-
-			//prevents out of bound rays
-			if (ceil(rayY) < 0 || ceil(rayX) < 0 || ceil(rayY) >= map.size() || ceil(rayX) >= map[0].size()) {	
-				break;
-			}
-			if (map[ceil(rayY)][ceil(rayX)].transparent && !blocked && rayDistance < viewRange - 1.5) {	//if this is a valid tile and not blocked before
-				if (debug) {
-					map[ceil(rayY)][ceil(rayX)].back = rayColour;
-				}
-				map[ceil(rayY)][ceil(rayX)].discovered = true;
-				tilesRevealed.insert(Coord(ceil(rayX), ceil(rayY)));
-			} else {	//if it's not a valid tile (note that this check extends 1 tile out)
-				blocked = true;
-				if (debug) {
-					tilesRevealed.insert(Coord(ceil(rayX), ceil(rayY)));
-					// tilesToHide.insert(Coord(ceil(rayX), ceil(rayY)));	//add it to the tiles to hide
-				} else if (renderHidden) {
-					tilesToHide.insert(Coord(ceil(rayX), ceil(rayY)));	//add it to the tiles to hide
-					// tilesRevealed.insert(Coord(ceil(rayX), ceil(rayY)));
-				} else {
-					break;	//or break, if that setting is disable
-				}
-			}
-			if (rayDistance > viewRange) {
-				break;
-			}
-		}
-	}
-	/*
-	 *atx/y- where on the screen the rendering should be centered
-	 *fromx/y- where on the map the raycasting should be centered
-	 *numOfRays- number of rays to cast
-	 *viewRange- max distance ray travels
-	 *returns number of rays casted
-	*/
-	void renderEntities(int atx, int aty, float fromx, float fromy, bool arrows, bool all = false) {
-		for (int i = 0; i < entities.size(); ++i) {
-			if (tilesRevealed.count(entities[i].pos) == 1) {	//if within FOV
-				Coord rpos = Coord(atx + (entities[i].pos.x - fromx), aty + (entities[i].pos.y - fromy));
-
-				char symbolToRender = entities[i].glyph;
-				if (arrows && (((abs(entities[i].pos.x - player.pos.x) <= 4) && (abs(entities[i].pos.y - player.pos.y) <= 4)) || all)) {
-					symbolToRender = entities[i].dir;
-				}
-
-				console->putC(rpos.x, rpos.y, string(1, symbolToRender), entities[i].fore, {0,0,0});	//render it
-				entitiesRendered.insert(entities[i].pos);
-			}
-		}
-	}
-	int renderRaycast(int atx, int aty, float fromx, float fromy, float viewRange, float step, bool debug = false, bool coverHidden = true) {
-		//clear the rendering sets
-		tilesRevealed.clear();
-		tilesToHide.clear();
-		entitiesRendered.clear();
-
-		//cast the rays
-		int numOfRays = 2 * M_PI * viewRange;
-		for (int r = 0; r < numOfRays; ++r) {
-			float theta = (2 * M_PI) * (static_cast<float>(r) / numOfRays);
-			castRay(fromx - .5, fromy - .5, theta, viewRange, step, true, debug);
-		}
-		//post processing to show walls that are adjacent to revealed floors
-		unordered_set<Coord> newWalls;
-		//goes through every revealed tile and adds all adjacent walls to new set
-		for (auto i: tilesRevealed) {
-			for (int iy = -1; iy <= 1; ++iy) {
-				for (int ix = -1; ix <= 1; ++ix) {
-					if (map[i.y + iy][i.x + ix].transparent == false) {
-						newWalls.insert(Coord(i.x + ix, i.y + iy));
-						map[i.y + iy][i.x + ix].discovered = true;
-					}
-				}
-			}
-		}
-		//adds the new set to the old set
-		for (auto i: newWalls) {
-			tilesRevealed.insert(i);
-		}
-
-		//render entities
-		//renderEntities(atx, aty, fromx, fromy);
-		// for (int i = 0; i < entities.size(); ++i) {
-		// 	if (tilesRevealed.count(entities[i].pos) == 1) {	//if within FOV
-		// 		Coord rpos = Coord(atx + (entities[i].pos.x - fromx), aty + (entities[i].pos.y - fromy));
-
-		// 		char symbolToRender = entities[i].glyph;
-		// 		if (time(0) % 2 == 0 && (abs(entities[i].pos.x - player.pos.x) <= 4) && (abs(entities[i].pos.y - player.pos.y) <= 4)) {
-		// 			symbolToRender = entities[i].dir;
-		// 		}
-
-		// 		console->putC(rpos.x, rpos.y, string(1, symbolToRender), entities[i].fore, {0,0,0});	//render it
-		// 		entitiesRendered.insert(entities[i].pos);
-		// 	}
-		// }
-
-		//render the revealed tiles
-		for (auto i: tilesRevealed) {
-			if ((i.x != fromx || i.y != fromy) && (entitiesRendered.count(i) == 0)) {	//if not center tile and doesn't have an entity
-				console->putC(atx + (i.x - fromx), aty + (i.y - fromy), string(1,map[i.y][i.x].tile), map[i.y][i.x].fore, map[i.y][i.x].back);
-			}
-		}
-		//render the unrevealed tiles
-		if (coverHidden) {
-			for (auto i: tilesToHide) {
-				if (tilesRevealed.count(i) == 0) {	//this stops it from blacking over walls that are added in postproc
-					console->put(atx + (i.x - fromx), aty + (i.y - fromy), console->setColour({0,0,0}, {0,0,0}) + " ");
-				}
-			}
-		}
-		
-		//render player!
-		console->putC(atx, aty, string(1, player.glyph), player.fore, {0,0,0});
-
-		
-		//return the number of rays used
-		return numOfRays;
-	}
 
 /*-----------------------dijkstra map/pathfinding--------------------------*/
 	void updateDijkstraMap(int playerx, int playery, int range, bool debug = false) {
@@ -659,7 +901,6 @@ class Map {
 				visited.insert(currentTile);
 				//set the value to be the current layer
 				dijkstraMap[currentTile.y][currentTile.x] = i;
-				
 				//surrounding tiles
 				int st[8][2] = {{-1,-1},{-1,0},{-1,1},{0,-1},{0,1},{1,-1},{1,0},{1,1}};
 				//loop through surrounding tiles
@@ -689,6 +930,12 @@ class Map {
 
 	void advanceEntitiesTowardsPlayer() {
 		for (int i = 0; i < entities.size(); ++i) {
+			if (entities[i].acting) {
+				continue;
+			}
+			if (not entities[i].alive) {
+				continue;
+			}
 			if (rand() % 3 == 0) {
 				continue;
 			}
@@ -697,24 +944,18 @@ class Map {
 			for (int j = 0; j < 8; ++j) {
 				if (dijkstraMap[entities[i].pos.y+st[j][0]][entities[i].pos.x+st[j][1]] < dijkstraMap[entities[i].pos.y][entities[i].pos.x]
 				&& dijkstraMap[entities[i].pos.y+st[j][0]][entities[i].pos.x+st[j][1]] != 0) {
-					entities[i].pos = Coord(entities[i].pos.x+st[j][1], entities[i].pos.y+st[j][0]);
-					switch(j) {
-						case 0:entities[i].dir = Entity::N; break;
-						case 1:entities[i].dir = Entity::W; break;
-						case 2:entities[i].dir = Entity::E; break;
-						case 3:entities[i].dir = Entity::S; break;
-						case 4:entities[i].dir = Entity::NW; break;
-						case 5:entities[i].dir = Entity::NE; break;
-						case 6:entities[i].dir = Entity::SW; break;
-						case 7:entities[i].dir = Entity::SE; break;
-					}
+					//entities[i].pos = Coord(entities[i].pos.x+st[j][1], entities[i].pos.y+st[j][0]);
+					global__eventQ.push_back(new Event_EntityMove(global__currentTime + entities[i].getSpeed(), &entities[i], entities[i].pos.x, entities[i].pos.y, entities[i].pos.x+st[j][1], entities[i].pos.y+st[j][0]));
+					entities[i].acting = true;
 					break;
 				}
 			}
 		}
 	}
+
 /*-----------------------debugging--------------------------*/
 	void _printMap(bool direct = true) {	//prints a full version of the map
+		//console->moveConsoleDrawingPoint(1,1);
 		cout << console->setColour({192,192,192},{0,0,0});
 		for (int i = 0; i < map.size(); ++i) {
 			if (not direct) {
@@ -722,106 +963,253 @@ class Map {
 			}
 			for (int j = 0; j < map[0].size(); ++j) {
 				if (direct) {
-					console->putC(j, i, string(1, map[i][j].tile), map[i][j].fore, map[i][j].back);
+					array<array<int, 3>, 2> colour = map[i][j].getDisplayColour();
+					console->putC(j, i, string(1, map[i][j].tile), colour[0], colour[1]);
 				} else {
-					cout << console->setColour(map[i][j].fore, map[i][j].back);
+					array<array<int, 3>, 2> colour = map[i][j].getDisplayColour();
+					cout << console->setColour(colour[0], colour[1]);
 					cout << map[i][j].tile;
 				}
 			}
 		}
-		// for (int i = 0; i < entities.size(); ++i) {
-		// 	console->putC(entities[i].pos.x, entities[i].pos.y, string(1, entities[i].glyph), entities[i].fore, {0,0,0});
-		// 	//cout << entities[i].pos.x << " " << entities[i].pos.y << endl;
-		// }
-		
+		cout << "\n-done (" << map.size() << ")";
 	}
 };
 
 class World {
 	public:
-/*-------------------general members and constructor----------------------*/
+/*-----------------------general members and constructor-----------------*/
 	CRI console;
+	Log log;
 	vector<Map> dungeon;
-	int currentLevel;
-	int time;
-	stack<Event> timeline;
+	Entity player = Entity('@', "you");
 
 	World(int screenx, int screeny) {
+		player.depth = 0;
+		player.initAsHumanoid();
 		console.init(screenx, screeny, false);
+		log.init(&console, 1, 45, 49, 49);
 		dungeon.push_back(Map(&console));
-		currentLevel = 0;
-		generateLevel(0, 50);
+		generateLevel(0, 100);
 	}
-/*----------------------level gen----------------------*/
+/*-----------------------level gen----------------------*/
 	void generateLevel(int type, int numOfGoblins) {
 		switch (type) {
-			case 0: dungeon[currentLevel].initAsCave_CA(100, 100, 3, 45, 4, 5, 1); break;	//cave
+			case 0: dungeon[player.depth].initAsCave_CA(200, 200, 10, 45, 4, 5, 1); player.pos = dungeon[player.depth].getValidPos(); break;	//cave
+			case 1: dungeon[player.depth].initAsDungeon_CA(100, 100, 5, 20, 20, 5, 45, 4, 5, 1); player.pos = dungeon[player.depth].getValidPos(); break;	//cave
 		}
+		dungeon[player.depth].addRandomLamps();
+		dungeon[player.depth].calculateStaticLight();
 		for (int i = 0; i < numOfGoblins; ++i) {
 			Entity goblin = Entity('g', "goblin", {108 + rand() % 80, 140 + rand() % 80, 85 + rand() % 80});
-			goblin.pos = dungeon[currentLevel].getValidPos();
-			dungeon[currentLevel].entities.push_back(goblin);
+			goblin.pos = dungeon[player.depth].getValidPos();
+			goblin.initAsHumanoid();
+			dungeon[player.depth].entities.push_back(goblin);
 		}
 	}
 
-/*----------------------control- put loop and tick() and such here----------------------*/
+/*-----------------------UI----------------------*/
+	array<int, 3> getBPCol(BodyPart * bp) {
+		if (bp->disabled) {
+			return {70, 30, 30};
+		}
+		return {100, 200, 70};
+	}
+	void drawBody(int atx, int aty, Entity * entity) {
+		if (!entity->humanoid) {
+			return;
+		}
+		array<int, 3> backColour = {0,0,0};
+		array<int, 3> torsoColour = getBPCol(&entity->body[0]), headColour = getBPCol(&entity->body[1]);
+		array<int, 3> larmColour = getBPCol(&entity->body[2]), rarmColour = getBPCol(&entity->body[3]);
+		array<int, 3> llegColour = getBPCol(&entity->body[4]), rlegColour = getBPCol(&entity->body[5]);
+		//head
+		console.putC(atx + 1, aty, string(1, 222), headColour, backColour);
+		console.putC(atx + 2, aty, string(1, 221), headColour, backColour);
+		//torso
+		console.putC(atx + 1, aty + 1, string(1, 203), torsoColour, backColour);
+		console.putC(atx + 2, aty + 1, string(1, 203), torsoColour, backColour);
+		// console.putC(atx + 1, aty + 2, string(1, 19), torsoColour, backColour);
+		// console.putC(atx + 2, aty + 2, string(1, 19), torsoColour, backColour);
+		console.putC(atx + 1, aty + 2, string(1, 199), torsoColour, backColour);
+		console.putC(atx + 2, aty + 2, string(1, 182), torsoColour, backColour);
+		console.putC(atx + 1, aty + 3, string(1, 198), torsoColour, backColour);
+		console.putC(atx + 2, aty + 3, string(1, 181), torsoColour, backColour);
+		//arms
+		console.putC(atx + 0, aty + 1, string(1, 218), rarmColour, backColour);
+		console.putC(atx + 3, aty + 1, string(1, 191), larmColour, backColour);
+		console.putC(atx + 0, aty + 2, string(1, 198), rarmColour, backColour);
+		console.putC(atx + 3, aty + 2, string(1, 181), larmColour, backColour);
+		console.putC(atx + 0, aty + 3, string(1, 222), rarmColour, backColour);
+		console.putC(atx + 3, aty + 3, string(1, 221), larmColour, backColour);
+		//leg
+		console.putC(atx + 1, aty + 4, string(1, 186), rlegColour, backColour);
+		console.putC(atx + 2, aty + 4, string(1, 186), llegColour, backColour);
+		console.putC(atx + 1, aty + 5, string(1, 179), rlegColour, backColour);
+		console.putC(atx + 2, aty + 5, string(1, 179), llegColour, backColour);
+	}
+
+/*-----------------------control-----------------------*/
+	int renderX = 27, renderY = 23;
+	int getCurrentDecaMs() {
+		auto now = std::chrono::system_clock::now();
+		auto now_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
+		auto value = now_ms.time_since_epoch();
+		return value.count() % 10000;
+	}
+	void handleEvents() {
+		for (int i = 0; i < global__eventQ.size(); ++i) {
+			console.putString(1, 45, to_string(i) + "," + to_string(global__eventQ.size()));
+			//if time has not come, continue
+			if (global__eventQ[i]->timestamp > global__currentTime) {
+				continue;
+			}
+			//if it is old and unhandled, note error and continue
+			if (global__eventQ[i]->timestamp < global__currentTime) {
+				continue;
+			}
+
+			//go through all the types and handle them
+			if (global__eventQ[i]->type == Event::EventType::ENTITYMOVE) {
+				Event_EntityMove * moveEvent = static_cast<Event_EntityMove *>(global__eventQ[i]);
+				if (moveEvent->subject->alive) {
+					moveEvent->subject->pos = Coord(moveEvent->tox, moveEvent->toy);
+					moveEvent->subject->acting = false;	//free the entity for new events
+				}
+			}
+
+			//remove the now-old event and decrements i to account for it
+			global__eventQ.erase(global__eventQ.begin() + i--);
+		}
+	}
+	void render() {
+		char playerTile = player.glyph;
+		console.putC(renderX, renderY, string(1, static_cast<char>(playerTile)), player.fore, {0,0,0});
+		dungeon[player.depth].drawMoves(renderX, renderY, player.pos.x, player.pos.y, (getCurrentDecaMs() / 83) % 12);
+		drawBody(1, 1, &player);
+		log.render();
+		console.render();
+	}
+	void tick(bool debug = false) {
+		global__currentTime += 1;
+		console.clear();
+		dungeon[player.depth].updateDijkstraMap(player.pos.x, player.pos.y, 25, debug);
+		handleEvents();
+		dungeon[player.depth].advanceEntitiesTowardsPlayer();
+		if (not player.acting) {
+			dungeon[player.depth].renderRaycast(renderX, renderY, player.pos.x, player.pos.y, 22, .3, false);
+		}
+	}
 
 
-/*----------------------input----------------------*/
+/*-----------------------input----------------------*/
 	bool getKey(char n) {
     	return GetKeyState(n) & 0x8000;
 	}
 
 	//this function handles a request to move the player by a coordinate amount and returns success (update) or failure (no update)
 	bool movePlayer(int dX, int dY) {
-		int playerX = dungeon[currentLevel].player.pos.x;
-		int playerY = dungeon[currentLevel].player.pos.y;
+		int playerX = player.pos.x;
+		int playerY = player.pos.y;
+
+		//if player is already doing something, return true
+		if (player.acting) {	
+			return false;
+		}
 
 		//if unwalkable, return false
-		if (not dungeon[currentLevel].map[playerY + dY][playerX + dX].walkable) {	
+		if (not dungeon[player.depth].map[playerY + dY][playerX + dX].walkable) {	
 			return false;
 		}
 
 		//if an entity is there, attack it and return true
-		if (dungeon[currentLevel].entitiesRendered.count(Coord(playerX + dX, playerY + dY)) > 0) {
+		if (dungeon[player.depth].entitiesRendered.count(Coord(playerX + dX, playerY + dY)) > 0) {
 			//fight!
+			for (int i = 0; i < dungeon[player.depth].entities.size(); ++i) {
+				if (dungeon[player.depth].entitiesRendered.count(dungeon[player.depth].entities[i].pos) > 0 && dungeon[player.depth].entities[i].pos == Coord(playerX + dX, playerY + dY)) {
+					dungeon[player.depth].map[playerY + dY - 1 + rand() % 3][playerX + dX - 1 + rand() % 3].back = dungeon[player.depth].entities[i].bloodColour;
+					int rando = rand() % 6;
+					dungeon[player.depth].entities[i].body[rando].disabled = true;
+					if (dungeon[player.depth].entities[i].body[0].disabled || dungeon[player.depth].entities[i].body[0].disabled) {
+						dungeon[player.depth].entities[i].alive = false;
+						dungeon[player.depth].entities[i].glyph = 237;
+					}
+				}
+			}
+			//ok done
 			return true;
 		}
 
-		//move the player and return true
-		dungeon[currentLevel].player.pos = Coord(playerX + dX, playerY + dY);
-
-		//return true if made it this far
+		//move the player, set direction, and return true if made it this far
+		//player.pos = Coord(playerX + dX, playerY + dY);
+		global__eventQ.push_back(new Event_EntityMove(global__currentTime + player.getSpeed(), &player, playerX, playerY, playerX + dX, playerY + dY));
+		player.acting = true;
+		if (dX == -1) {
+			if (dY == -1) {
+				player.dir = Entity::Facing::NW;
+			}
+			if (dY == 0) {
+				player.dir = Entity::Facing::W;
+			}
+			if (dY == 1) {
+				player.dir = Entity::Facing::SW;
+			}
+		}
+		if (dX == 1) {
+			if (dY == -1) {
+				player.dir = Entity::Facing::NE;
+			}
+			if (dY == 0) {
+				player.dir = Entity::Facing::E;
+			}
+			if (dY == 1) {
+				player.dir = Entity::Facing::SE;
+			}
+		}
+		if (dX == 0) {
+			if (dY == -1) {
+				player.dir = Entity::Facing::N;
+			}
+			if (dY == 1) {
+				player.dir = Entity::Facing::S;
+			}
+		}
 		return true;
 	}
 	bool listenPlayerInput() {
 		bool update = false;
-		if (getKey('U')) {		// top right ↗
+		if (getKey('E')) {		// top right ↗
 			update = movePlayer(1, -1) || update;
 		} 
-		if (getKey('Y')) {	// top left ↖
+		if (getKey('Q')) {	// top left ↖
 			update = movePlayer(-1, -1) || update;
 		}
-		if (getKey('N')) {	// bottom right ↘
+		if (getKey('C')) {	// bottom right ↘
 			update = movePlayer(1, 1) || update;
 		} 
-		if (getKey('B')) {	// bottom left ↙
+		if (getKey('Z')) {	// bottom left ↙
 			update = movePlayer(-1, 1) || update;
 		}
-		if (getKey('K')) {	// ↑
+		if (getKey('W')) {	// ↑
 			update = movePlayer(0, -1) || update;
 		}
-		if (getKey('J')) {	// ↓
+		if (getKey('S')) {	// ↓
 			update = movePlayer(0, 1) || update;
 		}
-		if (getKey('H')) {	// ←
+		if (getKey('A')) {	// ←
 			update = movePlayer(-1, 0) || update;
 		}
-		if (getKey('L')) {	// →
+		if (getKey('D')) {	// →
 			update =  movePlayer(1, 0) || update;
 		}
 		if (getKey('X')) {	// stay in place
 			update = true;
+			log.log("imma wait mk");
+			Sleep(50);
+		}
+		if (getKey('R')) {	// random injury
+			player.body[rand() % player.body.size()].disabled = true;
+			Sleep(50);
 		}
 
 		return update;
@@ -831,49 +1219,27 @@ class World {
 int main(int argc, char* argv[]) {
 	srand(time(0));
 
-	World w = World(45, 45);
+	World w = World(50, 60);
 
 	bool quit = false;
 	bool change = true;
 
-	bool arrowState = false;
-	bool renderedEvenTime = false;
-	bool renderedOddTime = false;
+	setupTimer();
 
 	cout << "STARTING";
 	while (not quit) {
 		if (GetKeyState(VK_ESCAPE) & 0x8000) {
 			quit = true;
 		}
-		change = w.listenPlayerInput();
-		if (time(0) % 2 == 0) {
-			renderedOddTime = false;
-			if (!renderedEvenTime) {
-				w.dungeon[w.currentLevel].renderEntities(23, 23, w.dungeon[w.currentLevel].player.pos.x, w.dungeon[w.currentLevel].player.pos.y, arrowState);
-				w.console.render();
-				arrowState = !arrowState;
-				renderedEvenTime = true;
-			}
-		} else {
-			renderedEvenTime = false;
-			if (!renderedOddTime) {
-				w.dungeon[w.currentLevel].renderEntities(23, 23, w.dungeon[w.currentLevel].player.pos.x, w.dungeon[w.currentLevel].player.pos.y, arrowState);
-				w.console.render();
-				arrowState = !arrowState;
-				renderedOddTime = true;
-			}
-		}
 		if (change) {
-			renderedOddTime = false; renderedEvenTime = false;
-			w.dungeon[w.currentLevel].updateDijkstraMap(w.dungeon[w.currentLevel].player.pos.x, w.dungeon[w.currentLevel].player.pos.y, 25, false);
-			w.dungeon[w.currentLevel].advanceEntitiesTowardsPlayer();
-			w.dungeon[w.currentLevel].renderEntities(23, 23, w.dungeon[w.currentLevel].player.pos.x, w.dungeon[w.currentLevel].player.pos.y, arrowState);
-			w.dungeon[w.currentLevel].renderRaycast(23, 23, w.dungeon[w.currentLevel].player.pos.x, w.dungeon[w.currentLevel].player.pos.y, 22, .1, false);
-			w.console.render();
+			w.tick();
 			change = false;
-		    cout << w.console.setColour({0,0,0},{255,255,255}) << " " << w.console.setColour({255,255,255},{0,0,0});
-			cout << "\n < " + string(1, (char)218) + " ^ " + string(1, (char)191) + " > " + string(1,(char)217) + " v ";
-			Sleep(50);
+		}
+		if (w.player.acting) {
+			change = true;
+		} else {
+			w.render();
+			change = w.listenPlayerInput();
 		}
 	}
 	cout << "SUCCESSFULLY FINISHED RUNNING";
